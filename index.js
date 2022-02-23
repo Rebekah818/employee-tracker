@@ -150,7 +150,7 @@ function prompt() {
   }
 
   function byRole() {
-      const query  = `SELECT  role.title, employee.id, employee.first_name, `
+      const query  = `SELECT  role.title, employee.id, employee.first_name, employee.last_name, `
   }
 
 
