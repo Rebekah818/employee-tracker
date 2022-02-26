@@ -3,7 +3,7 @@ const mysql = require('mysql2');
 const inquirer = require('inquirer');
 require('console.table');
 
-
+// prompts for the messages
 const messagePrompt = {
     viewAllDept: "View all Departments",
     viewAllEmployees: "View all Employees",
@@ -115,6 +115,8 @@ function prompt() {
         });
 };
 prompt();
+
+// function to query by department 
 function byDepartment() {
     const query = `SELECT department.department_name AS department, role.title, employee.id, employee.first_name, employee.last_name
       FROM employee 
@@ -131,6 +133,7 @@ function byDepartment() {
     })
 }
 
+// function to query by employee
 function byEmployee() {
     const query = `SELECT employee.id, employee.first_name, employee.last_name, role.title, department.department_name AS department, role.salary
       FROM employee
@@ -147,6 +150,7 @@ function byEmployee() {
     })
 }
 
+//function to query by role
 function byRole() {
     const query = `SELECT role.title, department.department_name AS department, role.salary 
       FROM role
@@ -161,6 +165,73 @@ function byRole() {
         prompt();
     })
 };
+// function to add an employee
+async function addEmployee() {
+    const addname = await inquirer.prompt(askName());
+    connection.query('SELECT role.id, role.title FROM role ORDER BY role.id;', async (err, res) => {
+        if (err) throw err;
+        const { role } = await inquirer.prompt([
+            {
+                name: 'role',
+                type: 'list',
+                choices: () => res.map(res => res.title),
+                message: 'What is the new role?: '
+            }
+        ]);
+        let roleId;
+        for (const row of res) {
+            if (row.title === role) {
+                roleId = row.id;
+                continue;
+            }
+        }
+        connection.query('SELECT * FROM employee', async (err, res) => {
+            if (err) throw err;
+            let choices = res.map(res => `${res.first_name} ${res.last_name}`);
+            choices.push('none');
+            let { manager } = await inquirer.prompt([
+                {
+                    name: 'manager',
+                    type: 'list',
+                    choices: choices,
+                    message: 'Choose the employee Manager: '
+                }
+            ]);
+            let managerId;
+            let managerName;
+            if (manager === 'none') {
+                managerId = null;
+            } else {
+                for (const data of res) {
+                    data.fullName = `${data.first_name} ${data.last_name}`;
+                    if (data.fullName === manager) {
+                        managerId = data.id;
+                        managerName = data.fullName;
+                        console.log(managerId);
+                        console.log(managerName);
+                        continue;
+                    }
+                }
+            }
+            console.log('Success in adding an employee');
+            connection.query(
+                'INSERT INTO employee SET ?',
+                {
+                    first_name: addname.first,
+                    last_name: addname.last,
+                    role_id: roleId,
+                    manager_id: parseInt(managerId)
+                },
+                (err, res) => {
+                    if (err) throw err;
+                    prompt();
 
+                }
+            );
+        });
+    });
 
-//module.exports = {}; 
+}
+// function to add 
+
+//module.exports = {};
